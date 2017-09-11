@@ -127,6 +127,7 @@ def depthFirstSearch(problem):
     "*** YOUR CODE HERE ***"
     # Creating a recursive function so that the currentState can be sent as a parameter.
     finalList, visited, flag = dfsFinalSolution(problem, problem.getStartState(), "None", [], {})
+    print "Total Path cost", problem.getCostOfActions(finalList)
     return finalList
 
 def breadthFirstSearch(problem):
@@ -145,6 +146,7 @@ def breadthFirstSearch(problem):
 
         visited[currentState] = 1
         if problem.isGoalState(currentState):
+            print "Total Path cost", problem.getCostOfActions(currentPath)
             return currentPath
 
         successorsList = problem.getSuccessors(currentState)
@@ -157,7 +159,29 @@ def breadthFirstSearch(problem):
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    expanded = {}
+    priorityQueue = util.PriorityQueue()
+    priorityQueue.push((problem.getStartState(), "None", []), 0)
+
+    while priorityQueue.isEmpty() == False:
+        node = priorityQueue.pop()
+        currentState = node[0]
+        direction = node[1]
+        currentPath = node[2]
+
+        if expanded.has_key(currentState):
+            continue
+
+        expanded[currentState] = 1
+        if problem.isGoalState(currentState) == True:
+            print "Total Path cost", problem.getCostOfActions(currentPath)
+            return currentPath
+
+        successorsList = problem.getSuccessors(currentState)
+        for x in successorsList:
+            tempPath = list(currentPath)
+            tempPath.append(x[1])
+            priorityQueue.push((x[0], x[1], tempPath), problem.getCostOfActions(tempPath))
 
 def nullHeuristic(state, problem=None):
     """
