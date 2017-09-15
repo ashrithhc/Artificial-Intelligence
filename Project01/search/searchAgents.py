@@ -358,7 +358,21 @@ class CornersProblem(search.SearchProblem):
         return len(actions)
 
 def calculatePathCost(currentState, corner):
-    return ( (currentState[0] - corner[0]) ** 2 + (currentState[1] - corner[1]) ** 2 ) ** 0.5
+    return ( abs(currentState[0] - corner[0]) + abs(currentState[1] - corner[1]) )
+
+def pathCostBetweenCorners(state, corners):
+    currentState, visitedCorners = state
+    topRight = corners[3]
+    maxDist = max(topRight[0], topRight[1])
+    minDist = min(topRight[0], topRight[1])
+
+    if len(visitedCorners) == 0:
+        return minDist*2 + maxDist
+    elif len(visitedCorners) == 1:
+        return minDist + maxDist
+    elif len(visitedCorners) == 2:
+        return minDist
+    return 0
 
 def cornersHeuristic(state, problem):
     """
@@ -377,12 +391,13 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    val = 0
+    val = 999999
     currentState, visitedCorners = state
     for corner in corners:
         if corner not in visitedCorners:
-            val += calculatePathCost(currentState, corner)
+            val = min(calculatePathCost(currentState, corner), val)
 
+    val += pathCostBetweenCorners(state, corners)
     return val
 
 class AStarCornersAgent(SearchAgent):
