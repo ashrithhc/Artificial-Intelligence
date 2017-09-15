@@ -295,14 +295,17 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return (self.startingPosition, [])
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # if state in self.corners and state not in self.visitedCorners:
+        #     self.visitedCorners.append(state)
+
+        return len(self.corners) == len(state[1])
 
     def getSuccessors(self, state):
         """
@@ -323,8 +326,20 @@ class CornersProblem(search.SearchProblem):
             #   dx, dy = Actions.directionToVector(action)
             #   nextx, nexty = int(x + dx), int(y + dy)
             #   hitsWall = self.walls[nextx][nexty]
-
             "*** YOUR CODE HERE ***"
+            currentState, visitedCorners = state
+
+            x,y = currentState
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                nextState = (nextx, nexty)
+                if nextState in self.corners and nextState not in visitedCorners:
+                    temp = list(visitedCorners)
+                    temp.append(nextState)
+                    successors.append( ( (nextState, temp), action, 1) )
+                else :
+                    successors.append( ( (nextState, visitedCorners), action, 1) )
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -342,6 +357,8 @@ class CornersProblem(search.SearchProblem):
             if self.walls[x][y]: return 999999
         return len(actions)
 
+def calculatePathCost(currentState, corner):
+    return ( (currentState[0] - corner[0]) ** 2 + (currentState[1] - corner[1]) ** 2 ) ** 0.5
 
 def cornersHeuristic(state, problem):
     """
@@ -360,7 +377,13 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    val = 0
+    currentState, visitedCorners = state
+    for corner in corners:
+        if corner not in visitedCorners:
+            val += calculatePathCost(currentState, corner)
+
+    return val
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"

@@ -133,7 +133,7 @@ def depthFirstSearch(problem):
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    currentPath, visited = [], {}
+    currentPath, visited = [], []
     successorsQueue = util.Queue()
     direction = "None"
     successorsQueue.push((problem.getStartState(), direction, []))
@@ -144,14 +144,17 @@ def breadthFirstSearch(problem):
         direction = node[1]
         currentPath = node[2]
 
-        visited[currentState] = 1
+        if currentState in visited:
+            continue
+
+        visited.append(currentState)
         if problem.isGoalState(currentState):
             print "Total Path cost", problem.getCostOfActions(currentPath)
             return currentPath
 
         successorsList = problem.getSuccessors(currentState)
         for x in successorsList:
-            if (visited.has_key(x[0]) == False):
+            if x[0] not in visited:
                 tempPath = list(currentPath)
                 tempPath.append(x[1])
                 successorsQueue.push((x[0], x[1], tempPath))
@@ -159,7 +162,7 @@ def breadthFirstSearch(problem):
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
-    expanded = {}
+    expanded = []
     priorityQueue = util.PriorityQueue()
     priorityQueue.push((problem.getStartState(), "None", []), 0)
 
@@ -169,10 +172,10 @@ def uniformCostSearch(problem):
         direction = node[1]
         currentPath = node[2]
 
-        if expanded.has_key(currentState):
+        if currentState in expanded:
             continue
 
-        expanded[currentState] = 1
+        expanded.append(currentState)
         if problem.isGoalState(currentState) == True:
             print "Total Path cost", problem.getCostOfActions(currentPath)
             return currentPath
@@ -193,7 +196,7 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    expanded = {}
+    expanded = []
     priorityQueue = util.PriorityQueue()
     priorityQueue.push((problem.getStartState(), "None", []), 0)
 
@@ -203,10 +206,10 @@ def aStarSearch(problem, heuristic=nullHeuristic):
         direction = node[1]
         currentPath = node[2]
 
-        if expanded.has_key(currentState):
+        if currentState in expanded:
             continue
 
-        expanded[currentState] = 1
+        expanded.append(currentState)
         if problem.isGoalState(currentState) == True:
             print "Total Path cost", problem.getCostOfActions(currentPath)
             return currentPath
@@ -215,7 +218,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
         for x in successorsList:
             tempPath = list(currentPath)
             tempPath.append(x[1])
-            priorityQueue.push((x[0], x[1], tempPath), (len(tempPath)+heuristic(currentState, problem)))
+            priorityQueue.push((x[0], x[1], tempPath), (problem.getCostOfActions(tempPath)+heuristic(x[0], problem)))
 
 
 # Abbreviations
