@@ -362,7 +362,7 @@ def calculatePathCost(currentState, corner):
 
 def pathCostBetweenCorners(state, corners):
     currentState, visitedCorners = state
-    topRight = corners[3]
+    topRight = corners[-1]
     maxDist = max(topRight[0], topRight[1])
     minDist = min(topRight[0], topRight[1])
 
@@ -391,14 +391,15 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    val = 999999
     currentState, visitedCorners = state
-    for corner in corners:
-        if corner not in visitedCorners:
-            val = min(calculatePathCost(currentState, corner), val)
 
-    val += pathCostBetweenCorners(state, corners)
-    return val
+    unvisitedCorners = [corner for corner in corners if corner not in visitedCorners]
+
+    val = 999999
+    for corner in unvisitedCorners:
+        val = min(val, calculatePathCost(currentState, corner))
+
+    return (val + pathCostBetweenCorners(state, corners))
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
