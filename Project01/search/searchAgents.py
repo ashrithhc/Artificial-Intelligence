@@ -40,6 +40,7 @@ from game import Actions
 import util
 import time
 import search
+import graphAlgorithms
 
 class GoWestAgent(Agent):
     "An agent that goes West until it can't."
@@ -357,22 +358,65 @@ class CornersProblem(search.SearchProblem):
             if self.walls[x][y]: return 999999
         return len(actions)
 
-def calculatePathCost(currentState, corner):
-    return ( abs(currentState[0] - corner[0]) + abs(currentState[1] - corner[1]) )
+def mergeTrees(parents, ranks, x, y):
+    pRoot1 = getParent(parents, x)
+    pRoot2 = getParent(parents, y)
+    if ranks[pRoot1] < ranks[pRoot2]:
+        return mergeTrees(parents, ranks, pRoot2, pRoot1)
+    parents[pRoot2] = pRoot1
+    if pRoot1 != pRoot2 and ranks[pRoot1] == ranks[pRoot2]:
+        ranks[pRoot1] = ranks[pRoot1] + 1
 
-def pathCostBetweenCorners(state, corners):
-    currentState, visitedCorners = state
-    topRight = corners[-1]
-    maxDist = max(topRight[0], topRight[1])
-    minDist = min(topRight[0], topRight[1])
+def getParent(parents, vertex):
+    if parents[vertex] == vertex:
+        return vertex
+    return getParent(parents, parents[vertex])
 
-    if len(visitedCorners) == 0:
-        return minDist*2 + maxDist
-    elif len(visitedCorners) == 1:
-        return minDist + maxDist
-    elif len(visitedCorners) == 2:
-        return minDist
-    return 0
+def addEdgeToATree(edge, trees):
+    a, b, weight = edge
+
+    for tree in trees:
+        if a in tree and b in tree:
+            return trees, 0
+        elif a in tree:
+            tree.append(b)
+            return trees, weight
+        elif b in tree:
+            tree.append(a)
+            return trees, weight
+
+    newTree = []
+    newTree.append(a)
+    newTree.append(b)
+    trees.append(newTree)
+    return trees, weight
+
+def minSpanTreeLength(currentState, corners):
+    # Referred from
+    # http://www.geeksforgeeks.org/greedy-algorithms-set-2-kruskals-minimum-spanning-tree-mst/
+    # https://codereview.stackexchange.com/questions/128479/graph-and-minimum-spanning-tree-in-python
+    vertices = corners + [currentState]
+    edges = [(a, b, ( (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 ) ** 0.5) for a in vertices for b in vertices if a < b]
+
+    trees, finalWeight = [], 0
+    edges = sorted(edges, key=lambda x:x[1])
+
+    parents, ranks = {}, {}
+    for vertex in vertices:
+        parents[vertex] = vertex
+        ranks[vertex] =  0
+
+    finalTree =[]
+    for edge in edges:
+        x, y, weight = edge
+        if getParent(parents, x) != getParent(parents, y):
+            finalTree.append(edge)
+            mergeTrees(parents, ranks, x, y)
+
+    for x, y, weight, in finalTree:
+        finalWeight += weight
+
+    return finalWeight
 
 def cornersHeuristic(state, problem):
     """
@@ -391,15 +435,11 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
+
     currentState, visitedCorners = state
-
     unvisitedCorners = [corner for corner in corners if corner not in visitedCorners]
-
-    val = 999999
-    for corner in unvisitedCorners:
-        val = min(val, calculatePathCost(currentState, corner))
-
-    return (val + pathCostBetweenCorners(state, corners))
+    return graphAlgorithms.lengthMST([currentState]+unvisitedCorners)
+    # return minSpanTreeLength(currentState, unvisitedCorners)
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
