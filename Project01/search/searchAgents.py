@@ -399,7 +399,7 @@ def minSpanTreeLength(currentState, corners):
     edges = [(a, b, ( (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 ) ** 0.5) for a in vertices for b in vertices if a < b]
 
     trees, finalWeight = [], 0
-    edges = sorted(edges, key=lambda x:x[1])
+    edges = sorted(edges, key=lambda x:x[2])
 
     parents, ranks = {}, {}
     for vertex in vertices:
@@ -438,8 +438,7 @@ def cornersHeuristic(state, problem):
 
     currentState, visitedCorners = state
     unvisitedCorners = [corner for corner in corners if corner not in visitedCorners]
-    return graphAlgorithms.lengthMST([currentState]+unvisitedCorners)
-    # return minSpanTreeLength(currentState, unvisitedCorners)
+    return minSpanTreeLength(currentState, unvisitedCorners)
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
