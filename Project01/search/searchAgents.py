@@ -40,7 +40,6 @@ from game import Actions
 import util
 import time
 import search
-import graphAlgorithms
 
 class GoWestAgent(Agent):
     "An agent that goes West until it can't."
@@ -296,6 +295,7 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
+        # start state is the starting coordinates with a list of the corners visited by the pacman
         return (self.startingPosition, [])
 
     def isGoalState(self, state):
@@ -303,9 +303,7 @@ class CornersProblem(search.SearchProblem):
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        # if state in self.corners and state not in self.visitedCorners:
-        #     self.visitedCorners.append(state)
-
+        # the state is goal state if all four corners are visited
         return len(self.corners) == len(state[1])
 
     def getSuccessors(self, state):
@@ -328,13 +326,16 @@ class CornersProblem(search.SearchProblem):
             #   nextx, nexty = int(x + dx), int(y + dy)
             #   hitsWall = self.walls[nextx][nexty]
             "*** YOUR CODE HERE ***"
+            # get information of the current state of the game
             currentState, visitedCorners = state
 
+            # get the successors of the node, check if they are not walls
             x,y = currentState
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = int(x + dx), int(y + dy)
             if not self.walls[nextx][nexty]:
                 nextState = (nextx, nexty)
+                # If the nextState is a corner that is not visited yet, add this is to the visited corners list of the pacman if it takes this path
                 if nextState in self.corners and nextState not in visitedCorners:
                     temp = list(visitedCorners)
                     temp.append(nextState)
@@ -359,63 +360,59 @@ class CornersProblem(search.SearchProblem):
         return len(actions)
 
 def mergeTrees(parents, ranks, x, y):
+    # According to Kruskal's algorithm, merge two trees if they have a common vertex
+    # Referred to http://www.geeksforgeeks.org/greedy-algorithms-set-2-kruskals-minimum-spanning-tree-mst/
     pRoot1 = getParent(parents, x)
     pRoot2 = getParent(parents, y)
+    # If pRoot2 is higher in rank than pRoot1, then interchange the tree comparison
     if ranks[pRoot1] < ranks[pRoot2]:
         return mergeTrees(parents, ranks, pRoot2, pRoot1)
+    # If vertex 'pRoot2' is part of tree with root 'pRoot1', combine the these trees
     parents[pRoot2] = pRoot1
+    # If pRoot1 and pRoot2 are in different trees, increase rank of one of the trees
     if pRoot1 != pRoot2 and ranks[pRoot1] == ranks[pRoot2]:
         ranks[pRoot1] = ranks[pRoot1] + 1
 
 def getParent(parents, vertex):
+    # Given 'parents' and the vertex, we have to find if root parent of the vertex in this function and return it
     if parents[vertex] == vertex:
         return vertex
     return getParent(parents, parents[vertex])
 
-def addEdgeToATree(edge, trees):
-    a, b, weight = edge
-
-    for tree in trees:
-        if a in tree and b in tree:
-            return trees, 0
-        elif a in tree:
-            tree.append(b)
-            return trees, weight
-        elif b in tree:
-            tree.append(a)
-            return trees, weight
-
-    newTree = []
-    newTree.append(a)
-    newTree.append(b)
-    trees.append(newTree)
-    return trees, weight
-
 def minSpanTreeLength(currentState, corners):
-    # Referred from
-    # http://www.geeksforgeeks.org/greedy-algorithms-set-2-kruskals-minimum-spanning-tree-mst/
-    # https://codereview.stackexchange.com/questions/128479/graph-and-minimum-spanning-tree-in-python
+    # Referred from https://codereview.stackexchange.com/questions/128479/graph-and-minimum-spanning-tree-in-python
+    # Implementing Minimum spanning tree to get the estimate of cost to goal state from current game state
+
+    # All vertices needed to form minimum spanning tree
     vertices = corners + [currentState]
+    # Edges from all vertices with all combinations, a<b is used to make sure there are no duplicates
     edges = [(a, b, ( (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 ) ** 0.5) for a in vertices for b in vertices if a < b]
 
+    # trees is an array of individual trees that will be formed in this algorithm
     trees, finalWeight = [], 0
+    # sorting edges w.r.t weight
     edges = sorted(edges, key=lambda x:x[2])
 
+    # initialising root parents for all nodes as itself and ranks as 0
     parents, ranks = {}, {}
     for vertex in vertices:
         parents[vertex] = vertex
         ranks[vertex] =  0
 
+    # finaltree holds the final MST formed, it's weight will give us the heuristic
     finalTree =[]
+    # For each edge, add it to a tree if it does not form a loop
     for edge in edges:
         x, y, weight = edge
         if getParent(parents, x) != getParent(parents, y):
             finalTree.append(edge)
             mergeTrees(parents, ranks, x, y)
 
+    # calculate final weight of MST
     for x, y, weight, in finalTree:
         finalWeight += weight
 
+    # final weight is approximate estimate from current path to the goal state
     return finalWeight
 
 def cornersHeuristic(state, problem):
@@ -435,8 +432,9 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-
+    #get information of the current game state
     currentState, visitedCorners = state
+    # List of all unvisited corners according to the current game state
     unvisitedCorners = [corner for corner in corners if corner not in visitedCorners]
     return minSpanTreeLength(currentState, unvisitedCorners)
 
@@ -532,7 +530,18 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    # Get information about the current state
+    currentState, foodGrid = state
+    vertices = []
+
+    # Store all coordinates that has food in it into vertices
+    for x in range(foodGrid.width):
+        for y in range(foodGrid.height):
+            if foodGrid[x][y] == True:
+                vertices.append( (x, y) )
+
+    # Weight of the minimum spanning tree with all food nodes + current state is the heuristic value to goal state
+    return minSpanTreeLength(currentState, vertices)
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"

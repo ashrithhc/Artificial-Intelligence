@@ -133,25 +133,34 @@ def depthFirstSearch(problem):
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
+    # currentPath stores the current Path taken to arrive at this node, visited checks if the node is already expanded before
     currentPath, visited = [], []
+    # Queue datastructure used to store all the successor nodes
     successorsQueue = util.Queue()
+    # Direction taken to reach this node from the previous node
     direction = "None"
     successorsQueue.push((problem.getStartState(), direction, []))
 
+    # For each successor node, check if it is the goal, else find its successors
     while successorsQueue.isEmpty() == False:
+        # getting node details from the queue
         node = successorsQueue.pop()
         currentState = node[0]
         direction = node[1]
         currentPath = node[2]
 
+        # If node is already expanded, go to next node
         if currentState in visited:
             continue
 
+        # Mark this current node as expanded as we will expand it now if it is not goal state
         visited.append(currentState)
+        # If goal state, return back with the current Path
         if problem.isGoalState(currentState):
             print "Total Path cost", problem.getCostOfActions(currentPath)
             return currentPath
 
+        # Get successors of current node and append it to the queue if it is not visited before
         successorsList = problem.getSuccessors(currentState)
         for x in successorsList:
             if x[0] not in visited:
@@ -162,28 +171,37 @@ def breadthFirstSearch(problem):
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
     "*** YOUR CODE HERE ***"
+    # expanded stores the list of nodes that are expanded by the algorithm
     expanded = []
+    # Priority queue datastructure to store the successor nodes
     priorityQueue = util.PriorityQueue()
     priorityQueue.push((problem.getStartState(), "None", []), 0)
 
+    # For each node in the priority queue, check if its goal state or append its successors
     while priorityQueue.isEmpty() == False:
+        # Get and store node information
         node = priorityQueue.pop()
         currentState = node[0]
         direction = node[1]
         currentPath = node[2]
 
+        # If node already expanded, continue to next node
         if currentState in expanded:
             continue
 
+        # Mark node as expanded since it will expanded if it is not the goal state
         expanded.append(currentState)
+        # If goal state, return with current Path as the solution
         if problem.isGoalState(currentState) == True:
             print "Total Path cost", problem.getCostOfActions(currentPath)
             return currentPath
 
+        # Get list of successors of current node and append it to priority queue if not visited
         successorsList = problem.getSuccessors(currentState)
         for x in successorsList:
             tempPath = list(currentPath)
             tempPath.append(x[1])
+            # cost of 'tempPath' gives the priority value for priority queue
             priorityQueue.push((x[0], x[1], tempPath), problem.getCostOfActions(tempPath))
 
 def nullHeuristic(state, problem=None):
@@ -196,28 +214,37 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
+    # expanded stores the list of nodes that are expanded by the algorithm
     expanded = []
+    # Priority queue datastructure to store the successor nodes
     priorityQueue = util.PriorityQueue()
     priorityQueue.push((problem.getStartState(), "None", []), 0)
 
+    # For each node in the priority queue, check if its goal state or append its successors
     while priorityQueue.isEmpty() == False:
+        # Get and store node information
         node = priorityQueue.pop()
         currentState = node[0]
         direction = node[1]
         currentPath = node[2]
 
+        # If node already expanded, continue to next node
         if currentState in expanded:
             continue
 
+        # Mark node as expanded since it will expanded if it is not the goal state
         expanded.append(currentState)
+        # If goal state, return with current Path as the solution
         if problem.isGoalState(currentState) == True:
             print "Total Path cost", problem.getCostOfActions(currentPath)
             return currentPath
 
+        # Get list of successors of current node and append it to priority queue if not visited
         successorsList = problem.getSuccessors(currentState)
         for x in successorsList:
             tempPath = list(currentPath)
             tempPath.append(x[1])
+            # cost of 'tempPath' with heuristic value gives the approximate estimate of cost to goal for priority queue
             priorityQueue.push((x[0], x[1], tempPath), (problem.getCostOfActions(tempPath)+heuristic(x[0], problem)))
 
 
