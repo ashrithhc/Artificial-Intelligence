@@ -73,6 +73,13 @@ class ReflexAgent(Agent):
         newGhostStates = successorGameState.getGhostStates()
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
+        "*** YOUR CODE HERE ***"
+
+        if successorGameState.isWin():
+          return 9999
+        if successorGameState.isLose():
+          return 0
+
         ghostPos = [successorGameState.getGhostPosition(agentIndex) for agentIndex in range(1, len(newGhostStates)+1)]
         scaryNum = 0
         for pos in ghostPos:
@@ -80,7 +87,6 @@ class ReflexAgent(Agent):
           if distToGhost < 5:
             scaryNum += (5 - distToGhost) * 5
 
-        "*** YOUR CODE HERE ***"
         return (successorGameState.getScore() - scaryNum)
 
 def scoreEvaluationFunction(currentGameState):
@@ -136,7 +142,53 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Returns the total number of agents in the game
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Collect legal moves and successor states
+        legalMoves = gameState.getLegalActions()
+
+        scores = [self.bestGhostResponseIndividual(gameState.generateSuccessor(0, move)) for move in legalMoves]
+        bestScore = max(scores)
+        bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+        chosenIndex = random.choice(bestIndices)
+
+        return legalMoves[chosenIndex]
+
+    def bestGhostResponseIndividual(self, gameState):
+        for agentIndex in range(1, gameState.getNumAgents()):
+          legalMoves = gameState.getLegalActions(agentIndex)
+          if len(legalMoves) == 0:
+            continue
+          scores = [self.evaluationFunction(gameState.generateSuccessor(agentIndex, move)) for move in legalMoves]
+          bestScore = min(scores)
+          bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+          ghostAction = legalMoves[bestIndices[0]]
+
+          gameState = gameState.generateSuccessor(agentIndex, ghostAction)
+
+        if self.depth == -1:
+          return self.evaluationFunction(gameState)
+
+        self.depth -= 1
+        return self.bestPacmanResponse(gameState)
+
+    def bestPacmanResponse(self, gameState):
+        legalMoves = gameState.getLegalActions()
+        if len(legalMoves) == 0:
+            return self.bestGhostResponseIndividual(gameState)
+
+        for move in legalMoves:
+            if gameState.generateSuccessor(0, move).isWin():
+              return 9999
+            if gameState.generateSuccessor(0, move).isLose():
+              return -9999
+
+        scores = [self.evaluationFunction(gameState.generateSuccessor(0, move)) for move in legalMoves]
+        bestScore = max(scores)
+        bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+        pacmanAction = legalMoves[bestIndices[0]]
+
+        gameState = gameState.generateSuccessor(0, pacmanAction)
+
+        return self.bestGhostResponseIndividual(gameState)
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
