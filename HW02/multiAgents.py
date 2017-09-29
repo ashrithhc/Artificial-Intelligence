@@ -142,53 +142,51 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Returns the total number of agents in the game
         """
         "*** YOUR CODE HERE ***"
-        # Collect legal moves and successor states
         legalMoves = gameState.getLegalActions()
 
-        scores = [self.bestGhostResponseIndividual(gameState.generateSuccessor(0, move)) for move in legalMoves]
+        scores = [self.getAllPossibleStates(gameState.generateSuccessor(0, move), 1, self.depth) for move in legalMoves]
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices)
 
         return legalMoves[chosenIndex]
 
-    def bestGhostResponseIndividual(self, gameState):
-        for agentIndex in range(1, gameState.getNumAgents()):
-          legalMoves = gameState.getLegalActions(agentIndex)
-          if len(legalMoves) == 0:
-            continue
-          scores = [self.evaluationFunction(gameState.generateSuccessor(agentIndex, move)) for move in legalMoves]
-          bestScore = min(scores)
-          bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
-          ghostAction = legalMoves[bestIndices[0]]
+    def getAllPossibleStates(self, gameState, agentIndex, localdepth):
+        legalMoves = gameState.getLegalActions(agentIndex)
+        scores = []
 
-          gameState = gameState.generateSuccessor(agentIndex, ghostAction)
+        if len(legalMoves) == 0 and agentIndex == gameState.getNumAgents()-1:
+          if localdepth == 1:
+            return self.evaluationFunction(gameState)
+          else:
+            scores.append(self.bestPacmanResponse(gameState, localdepth-1))
+        elif len(legalMoves) == 0 and agentIndex != gameState.getNumAgents()-1:
+          return self.getAllPossibleStates(gameState, agentIndex+1, localdepth)
 
-        if self.depth == -1:
-          return self.evaluationFunction(gameState)
+        if len(legalMoves) != 0:
+          for move in legalMoves:
+            if agentIndex == gameState.getNumAgents()-1:
+              if localdepth == 1:
+                return self.evaluationFunction(gameState)
+              else:
+                scores.append(self.bestPacmanResponse(gameState.generateSuccessor(agentIndex, move), localdepth-1))
+            else:
+              return self.getAllPossibleStates(gameState.generateSuccessor(agentIndex, move), agentIndex+1, localdepth)
 
-        self.depth -= 1
-        return self.bestPacmanResponse(gameState)
+        bestScore = min(scores)
+        return bestScore
 
-    def bestPacmanResponse(self, gameState):
+    def bestPacmanResponse(self, gameState, localdepth):
         legalMoves = gameState.getLegalActions()
         if len(legalMoves) == 0:
-            return self.bestGhostResponseIndividual(gameState)
+          return self.getAllPossibleStates(gameState, 1, localdepth)
 
+        scores = []
         for move in legalMoves:
-            if gameState.generateSuccessor(0, move).isWin():
-              return 9999
-            if gameState.generateSuccessor(0, move).isLose():
-              return -9999
+          scores.append(self.getAllPossibleStates(gameState.generateSuccessor(0, move), 1, localdepth))
 
-        scores = [self.evaluationFunction(gameState.generateSuccessor(0, move)) for move in legalMoves]
         bestScore = max(scores)
-        bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
-        pacmanAction = legalMoves[bestIndices[0]]
-
-        gameState = gameState.generateSuccessor(0, pacmanAction)
-
-        return self.bestGhostResponseIndividual(gameState)
+        return bestScore
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -200,7 +198,83 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
           Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        legalMoves = gameState.getLegalActions()
+        alpha = -999999
+        beta = 999999
+
+        # scores = [self.getAllPossibleStates(gameState.generateSuccessor(0, move), 1, alpha, beta, self.depth) for move in legalMoves]
+        scores = []
+        for move in legalMoves:
+          tempAlpha = self.getAllPossibleStates(gameState.generateSuccessor(0, move), 1, alpha, beta, self.depth)
+          if tempAlpha > alpha:
+            alpha = tempAlpha
+          scores.append(tempAlpha)
+        bestScore = max(scores)
+        bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+        chosenIndex = random.choice(bestIndices)
+
+        return legalMoves[chosenIndex]
+
+    def getAllPossibleStates(self, gameState, agentIndex, alpha, beta, localdepth):
+
+        if alpha > beta:
+          return beta
+
+        legalMoves = gameState.getLegalActions(agentIndex)
+        scores = []
+
+        if len(legalMoves) == 0 and agentIndex == gameState.getNumAgents()-1:
+          if localdepth == 1:
+            tempBeta = self.evaluationFunction(gameState)
+            if tempBeta < beta:
+              beta = tempBeta
+            return beta
+          else:
+            tempBeta = self.bestPacmanResponse(gameState, alpha, beta, localdepth-1)
+            if tempBeta < beta:
+              beta = tempBeta
+        elif len(legalMoves) == 0 and agentIndex != gameState.getNumAgents()-1:
+          return self.getAllPossibleStates(gameState, agentIndex+1, alpha, beta, localdepth)
+
+        if len(legalMoves) != 0:
+          for move in legalMoves:
+            if agentIndex == gameState.getNumAgents()-1:
+              if localdepth == 1:
+                tempBeta = self.evaluationFunction(gameState)
+                if tempBeta < beta:
+                  beta = tempBeta
+                return beta
+              else:
+                if alpha > beta:
+                  return beta
+                tempBeta = self.bestPacmanResponse(gameState.generateSuccessor(agentIndex, move), alpha, beta, localdepth-1)
+                if tempBeta < beta:
+                  beta = tempBeta
+            else:
+              return self.getAllPossibleStates(gameState.generateSuccessor(agentIndex, move), agentIndex+1, alpha, beta, localdepth)
+
+        return beta
+
+    def bestPacmanResponse(self, gameState, alpha, beta, localdepth):
+        if alpha > beta:
+          return alpha
+
+        legalMoves = gameState.getLegalActions()
+        if len(legalMoves) == 0:
+          tempAlpha = self.getAllPossibleStates(gameState, 1, alpha, beta, localdepth)
+          if tempAlpha > alpha:
+            alpha = tempAlpha
+          return alpha
+
+        scores = []
+        for move in legalMoves:
+          if alpha > beta:
+            return alpha
+          tempAlpha = self.getAllPossibleStates(gameState.generateSuccessor(0, move), 1, alpha, beta, localdepth)
+          if tempAlpha > alpha:
+            alpha = tempAlpha
+
+        return alpha
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
