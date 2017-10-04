@@ -203,7 +203,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
           tempv[1] = move
           if tempv[0] < minValue[0]:
             minValue = tempv
-          if minValue[0] <= alpha:
+          if minValue[0] < alpha:
             return minValue
           beta = min(beta, minValue[0])
       return minValue
