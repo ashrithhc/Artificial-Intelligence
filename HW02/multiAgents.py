@@ -27,7 +27,8 @@ class ReflexAgent(Agent):
       it in any way you see fit, so long as you don't touch our method
       headers.
     """
-
+    def __init__(self):
+        self.nodes = 0
 
     def getAction(self, gameState):
         """
@@ -75,14 +76,24 @@ class ReflexAgent(Agent):
 
         "*** YOUR CODE HERE ***"
 
+        # Gets the manhattan distance between pacman and the ghost for every ghost - stores it in a list.
         ghostDistances = [manhattanDistance(ghostState.getPosition(), newPos) for ghostState in newGhostStates]
         
+        # List of all coordinates where the food is present in the grid
         foodList = newFood.asList()
+        # Gets the manhattan distance between pacman and the food for every food available in the grid - stores in a list
         foodDistances = [manhattanDistance(food, newPos) for food in foodList]
 
+        # Calculating nodes expanded
+        self.nodes += 1
+
+        # If no food is present, goal is achieved, return current game state score
         if len(foodDistances) == 0:
+            print self.nodes
+            self.nodes = 0
             return successorGameState.getScore()
-        
+
+        # Multiply the current game state score by a factor of 'n' where n is a ratio of the distance to the nearest ghost to distance to nearest food.
         return ( min(ghostDistances) * (1.0/(min(foodDistances)))) + successorGameState.getScore()
 
 def scoreEvaluationFunction(currentGameState):
@@ -114,28 +125,45 @@ class MultiAgentSearchAgent(Agent):
         self.index = 0 # Pacman is always agent index 0
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
+        self.node = 0
 
 class MinimaxAgent(MultiAgentSearchAgent):
     """
       Your minimax agent (question 2)
     """    
     def pacmanBestMove(self, state, agent, localDepth):
+        # Returns the best score that can be achieved by the pacman - Max function in the minimax algorithm
+
+        # Calculate nodes expanded for report purpose
+        self.node += 1
+
+        # If game is won or lost, OR if the depth limit is reached, return
         if localDepth == (self.depth * state.getNumAgents()) or state.isWin() or state.isLose():
             return self.evaluationFunction(state)
 
+        # For each move possible at this state, get the best possible 'minimax' game state after Ghost makes the next move (Min function)
         maxValue = float("-inf")
         for move in state.getLegalActions(agent):
             maxValue = max(maxValue,self.ghostBestMove(state.generateSuccessor(agent,move), (agent+1)%(state.getNumAgents()), localDepth+1))          
         return maxValue
     
     def ghostBestMove(self, state, agent, localDepth):
+        # Returns the best score that can be achieved by the pacman - Min function in the minimax algorithm
+
+        # Calculate nodes expanded for report purpose
+        self.node += 1
+
+        # If game is won or lost, OR if the depth limit is reached, return
         if localDepth == (self.depth * state.getNumAgents()) or state.isWin() or state.isLose():
             return self.evaluationFunction(state)
 
+        # For each move possible at this state, get the best possible 'minimax' game state after Pacman makes the next move (Max function)
         minValue = float("inf")
         for move in state.getLegalActions(agent):
+            # If there are no more ghosts to make a move, go to pacman (Max function)
             if agent+1 == state.getNumAgents():
               minValue = min(minValue, self.pacmanBestMove(state.generateSuccessor(agent,move), (agent+1)%(state.getNumAgents()), localDepth+1))          
+            # If there are more ghosts to make a move, go to the next ghost (Min function)
             else:
               minValue = min(minValue, self.ghostBestMove(state.generateSuccessor(agent,move), (agent+1)%(state.getNumAgents()), localDepth+1))          
         return minValue
@@ -158,14 +186,21 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Returns the total number of agents in the game
         """
         "*** YOUR CODE HERE ***"
+        # localDepth stores the depth at which we are traversing, agent stores the agent index
         localDepth = 0
         agent = 0
+        # Get all possible moves possible for pacman to make
         legalMoves = gameState.getLegalActions(agent)
 
+        # for each legal move possible, calculate the best possible 'minimax' game state and return the score of that game state
         scores = [self.ghostBestMove(gameState.generateSuccessor(agent,move), agent+1, localDepth+1) for move in legalMoves]
+        # choose the best score
         bestScore = max(scores)
+        # Get the index of legalMoves which has the best score
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices)
+
+        # The best move according to minimax is returned
         return legalMoves[chosenIndex]
         
 class AlphaBetaAgent(MultiAgentSearchAgent):
@@ -174,38 +209,50 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     
     def pacmanBestMove(self, state, agent, localDepth, alpha, beta, action):
+      # Returns the best score that can be achieved by the pacman - Max function in the minimax algorithm with Alpha-beta pruning
+
+      # If game is won or lost, OR if the depth limit is reached, return
       if localDepth == (self.depth * state.getNumAgents()) or state.isWin() or state.isLose():
           return [self.evaluationFunction(state), action]
 
+      # we set the default value of direction to stop, but it will eventually be changed
       maxValue = [float("-inf"), Directions.STOP]
 
+      # for each legal move possible, calculate the best possible 'Alpha beta' game state after Ghost makes the next move (Min function)
       for move in state.getLegalActions(agent):
           tempValue = self.ghostBestMove(state.generateSuccessor(agent, move), (agent+1)%(state.getNumAgents()), localDepth+1, alpha, beta, move)
-          tempValue[1] = move
-          if tempValue[0] > maxValue[0]:
+          tempValue[1] = move # Action stored in temp value
+          if tempValue[0] > maxValue[0]: # If score returned on current action is greater than the best score for this game state, store this score as the best score for this game state
             maxValue = tempValue
-          if maxValue[0] >= beta:
+          if maxValue[0] >= beta: # If Max score of this game state is greater than beta, no point continuing further, return MaxValue
               return maxValue
-          alpha = max(alpha, maxValue[0])
+          alpha = max(alpha, maxValue[0]) # If all moves are explored, alpha will be the mximum of the them unless Alpha is greater than the best score
       return maxValue
     
     def ghostBestMove(self, state, agent, localDepth, alpha, beta, action):
+      # Returns the best score that can be achieved by the ghost - Min function in the minimax algorithm with Alpha-beta pruning
+
+      # If game is won or lost, OR if the depth limit is reached, return
       if localDepth == (self.depth * state.getNumAgents()) or state.isWin() or state.isLose():
           return [self.evaluationFunction(state), action]
 
+      # we set the default value of direction to stop, but it will eventually be changed
       minValue = [float("inf"),Directions.STOP]
 
+      # for each legal move possible, calculate the best possible 'Alpha beta' game state after Pacman makes the next move (Max function)
       for move in state.getLegalActions(agent):
+          # If there are no more ghosts to make a move, go to pacman (Max function)
           if agent + 1 == state.getNumAgents():
             tempv = self.pacmanBestMove(state.generateSuccessor(agent, move), (agent+1)%(state.getNumAgents()), localDepth+1, alpha, beta, move)
+          # If there are more ghosts to make a move, go to the next ghost (Min function)
           else:
             tempv = self.ghostBestMove(state.generateSuccessor(agent, move), (agent+1)%(state.getNumAgents()), localDepth+1, alpha, beta, move)
-          tempv[1] = move
-          if tempv[0] < minValue[0]:
+          tempv[1] = move # Action stored in temp value
+          if tempv[0] < minValue[0]: # If score returned on current action is less than the best score for this game state, store this score as the best score for this game state
             minValue = tempv
-          if minValue[0] < alpha:
+          if minValue[0] < alpha: # If Max score of this game state is less than alpha, no point continuing further, return MinValue
             return minValue
-          beta = min(beta, minValue[0])
+          beta = min(beta, minValue[0]) # If all moves are explored, beta will be the minimum of the them unless beta is less than the best score
       return minValue
 
     def getAction(self, gameState):
@@ -213,10 +260,11 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
       """
       "*** YOUR CODE HERE ***"
+      # Default values for alpha, beta and action
       alpha = float("-inf")
       beta = float("inf")
       action = Directions.STOP
-      v = self.pacmanBestMove(gameState, 0, 0, alpha, beta, action)
+      v = self.pacmanBestMove(gameState, 0, 0, alpha, beta, action) # Get the best move out of all legal possible moves
       return v[1]
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
@@ -225,26 +273,32 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
     """
 
     def pacmanBestMove(self, state, agent, localDepth):
+        # If game is won or lost, OR if the depth limit is reached, return
         if localDepth == (self.depth * state.getNumAgents()) or state.isWin() or state.isLose():
             return self.evaluationFunction(state)
 
+        # For each move possible at this state, get the best possible 'Alpha beta' game state after Ghost makes the next move (Min function)
         maxValue = float("-inf")
         for move in state.getLegalActions(agent):
             maxValue = max(maxValue,self.ghostBestMove(state.generateSuccessor(agent,move), (agent+1)%(state.getNumAgents()), localDepth+1))          
         return maxValue
     
     def ghostBestMove(self, state, agent, localDepth):
+        # If game is won or lost, OR if the depth limit is reached, return
         if localDepth == (self.depth * state.getNumAgents()) or state.isWin() or state.isLose():
             return self.evaluationFunction(state)
 
+        # For each move possible at this state, get the best possible 'Alpha beta' game state after Pacman makes the next move (Max function) and add it to the total score
         minValue = float("inf")
         sumOfAllMoves = 0
         for move in state.getLegalActions(agent):
+            # If there are no more ghosts to make a move, go to pacman (Max function)
             if agent+1 == state.getNumAgents():
-              sumOfAllMoves += self.pacmanBestMove(state.generateSuccessor(agent,move), (agent+1)%(state.getNumAgents()), localDepth+1)
+              sumOfAllMoves += self.pacmanBestMove(state.generateSuccessor(agent,move), (agent+1)%(state.getNumAgents()), localDepth+1) # Max function
+            # If there are more ghosts to make a move, go to the next ghost (Min function)
             else:
-              sumOfAllMoves += self.ghostBestMove(state.generateSuccessor(agent,move), (agent+1)%(state.getNumAgents()), localDepth+1)
-        return sumOfAllMoves/len(state.getLegalActions(agent))
+              sumOfAllMoves += self.ghostBestMove(state.generateSuccessor(agent,move), (agent+1)%(state.getNumAgents()), localDepth+1) # Min function
+        return sumOfAllMoves/len(state.getLegalActions(agent)) # Return the average of all the scores for each move possible (Expectimax)
 
     def getAction(self, gameState):
         """
@@ -254,14 +308,20 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
           legal moves.
         """
         "*** YOUR CODE HERE ***"
+        # localDepth stores the depth at which we are traversing, agent stores the agent index
         localDepth = 0
         agent = 0
+        # Get all possible moves possible for pacman to make
         legalMoves = gameState.getLegalActions(agent)
 
+        # for each legal move possible, calculate the best possible 'Alpha beta pruning' game state and return the score of that game state
         scores = [self.ghostBestMove(gameState.generateSuccessor(agent,move), agent+1, localDepth+1) for move in legalMoves]
+        # choose the best score
         bestScore = max(scores)
+        # Get the index of legalMoves which has the best score
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices)
+        # The best move according to Alpha beta pruning is returned
         return legalMoves[chosenIndex]
 
 def betterEvaluationFunction(currentGameState):
