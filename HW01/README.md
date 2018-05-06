@@ -1,5 +1,5 @@
 ## Project 01: The Searchin' Pac-Man (100 points, Due Wed Sep 20 before midnight)
-<img src="images/SearchingPacMan.png" width="50%"/>
+<img src="../images/SearchingPacMan.png" width="50%"/>
 
 
 ### Introduction
