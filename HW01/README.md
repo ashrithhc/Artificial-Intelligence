@@ -54,7 +54,7 @@ If pacman gets stuck, you can exit the game by typing CTRL-c into your terminal.
     
 Also, all of the commands that appear in this project also appear in <code>commands.txt</code>, for easy copying and pasting. In UNIX/Mac OS X, you can even run all these commands in order with bash <code>commands.txt</code>.
 
-#### Other useful commands
+#### Depth first search (DFS)
 
     python pacman.py -l tinyMaze -p SearchAgent
     
@@ -62,24 +62,38 @@ Also, all of the commands that appear in this project also appear in <code>comma
     
     python pacman.py -l bigMaze -z .5 -p SearchAgent
     
+#### Breadth first search (BFS)
+
     python pacman.py -l mediumMaze -p SearchAgent -a fn=bfs 
     
     python pacman.py -l bigMaze -p SearchAgent -a fn=bfs -z .5
     
+#### Eight Puzzle Problem
+    
     python eightpuzzle.py
     
+#### Uniform cost search (UCS)
+
     python pacman.py -l mediumMaze -p SearchAgent -a fn=ucs
     
     python pacman.py -l mediumDottedMaze -p StayEastSearchAgent
 
     python pacman.py -l mediumScaryMaze -p StayWestSearchAgent
-    
+
+#### A* search
+
     python pacman.py -l bigMaze -z .5 -p SearchAgent -a fn=astar,heuristic=manhattanHeuristic
+
+#### Corners problem
 
     python pacman.py -l tinyCorners -p SearchAgent -a fn=bfs,prob=CornersProblem
 
     python pacman.py -l mediumCorners -p SearchAgent -a fn=bfs,prob=CornersProblem
-    
+
+#### Corners problem Heuristic
+
     python pacman.py -l testSearch -p AStarFoodSearchAgent Note: AStarFoodSearchAgent is a shortcut for -p SearchAgent -a fn=astar,prob=FoodSearchProblem,heuristic=foodHeuristic
+
+#### Food Heuristic
 
     python pacman.py -l trickySearch -p AStarFoodSearchAgent
